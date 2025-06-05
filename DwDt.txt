@@ -1,0 +1,270 @@
+# prog1 ------------------------------------------------------------------------------------
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.datasets import fetch_california_housing
+
+data = fetch_california_housing(as_frame=True).frame
+print(data.head())
+
+def plot_hist(d):
+    d.hist(bins=30,edgecolor = 'black', figsize=(12,10))
+    plt.show()
+
+def plot_box(d):
+    plt.figure(figsize=(14,10))
+    for i, c in enumerate(d.columns, 1):
+        plt.subplot(3,3,i)
+        sns.boxplot(y=d[c])
+        plt.title(c)
+    plt.tight_layout()
+    plt.show()
+
+def stats(d):
+    for c in d.columns:
+        q1, q3 = d[c].quantile([0.25, 0.75])
+        iqr = q3 - q1
+        lower_bound = q1-1.5*iqr
+        upper_bound = q3+1.5*iqr
+        out = d[(d[c] < lower_bound) | (d[c] > upper_bound)]
+        print(f"\n{c} | Mean: {d[c].mean():.2f}, Median: {d[c].median():.2f}, Std: {d[c].std():.2f}, Outliers: {len(out)}")
+
+plot_hist(data)
+plot_box(data)
+stats(data)
+
+# prog2 ------------------------------------------------------------------------------------
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.datasets import fetch_california_housing
+
+df = fetch_california_housing(as_frame=True).frame
+print(df)
+
+corr = df.corr()
+print(corr)
+
+sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5, square=True)
+plt.show()
+
+sns.pairplot(df, diag_kind='kde', corner=True, plot_kws={'alpha':0.5}, diag_kws={'fill':True})
+plt.show()
+
+# prog3 ------------------------------------------------------------------------------------
+
+import matplotlib.pyplot as plt
+from sklearn import datasets
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
+
+data = datasets.load_iris()
+x = StandardScaler().fit_transform(data.data)
+pca = PCA(2)
+df = pd.DataFrame(pca.fit_transform(x), columns=['PC1','PC2'])
+df['t'] = data.target
+
+for t, c, n in zip(range(3), 'rgb', data.target_names):
+    s = df[df.t == t]
+    plt.scatter(s.PC1, s.PC2, color=c, alpha=0.6, label=n)
+
+plt.title('PCA of Iris Dataset')
+plt.xlabel('PC1')
+plt.ylabel('PC2')
+plt.legend()
+plt.grid()
+plt.show()
+
+print('Eigen vectors:\n', pca.components_)
+print('Explained variance ratio:', pca.explained_variance_ratio_)
+
+# prog4 ------------------------------------------------------------------------------------
+
+import pandas as pd
+
+data = {
+    "sky": ["sunny","sunny","rainy","sunny"],
+    "airtemp": ["warm","warm","cold","warm"],
+    "humidity": ["Normal","High","High","High"],
+    "wind": ["strong","strong","strong","strong"],
+    "water": ["warm","warm","warm","cool"],
+    "forecast": ["same","same","change","change"],
+    "playgame": ["yes","yes","no","yes"]
+}
+
+pd.DataFrame(data).to_csv("training_data.csv", index=False)
+df = pd.read_csv("training_data.csv")
+
+h = None
+for i, row in df.iterrows():
+    if row.iloc[-1] == "yes":
+        if h is None:
+            h = list(row[:-1])
+        else:
+            for j in range(len(h)):
+                if h[j] != row[j]:
+                    h[j] = "?"
+        print("After Training Example", i, ": Hypothesis =", h)
+
+print("\nFinal Hypothesis:", h)
+
+# prog5 ------------------------------------------------------------------------------------
+
+import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
+
+np.random.seed(42)
+x = np.random.rand(100).reshape(-1, 1)
+y = [1 if v <= 0.5 else 2 for v in x[:50]]
+
+x_train, x_test = x[:50], x[50:]
+
+print("K-NN Classification Results :")
+for k in [1, 2, 3, 4, 5, 20, 30]:
+    model = KNeighborsClassifier(k).fit(x_train, y)
+    print(f"\nK = {k}\nPredicted Classes : {model.predict(x_test)}")
+
+# prog6 ------------------------------------------------------------------------------------
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+x = np.array(range(3, 33))[:, None]
+y = np.array([1,2,1,2,1,1,3,4,5,4,5,6,5,6,7,8,9,10,11,11,12,11,11,10,12,11,11,10,9,8])
+tau = 0.5
+
+X = np.hstack((np.ones_like(x), x))
+x_test = np.linspace(3, 32, 300)[:, None]
+y_test = []
+
+for xt in x_test:
+    W = np.diag(np.exp(-((x - xt)**2)[:,0] / (2 * tau**2)))
+    theta = np.linalg.pinv(X.T @ W @ X) @ (X.T @ W @ y)
+    y_test.append([1, xt[0]] @ theta)
+
+plt.scatter(x, y)
+plt.plot(x_test, y_test, 'r')
+plt.grid()
+plt.show()
+
+# prog7 ------------------------------------------------------------------------------------
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.datasets import fetch_openml
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Boston Housing Linear Regression
+df = pd.read_csv("BostonHousing.csv")
+x = df[['indus', 'nox', 'rm', 'tax', 'ptratio', 'lstat']]
+y = df['medv']
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+model = LinearRegression().fit(x_train, y_train)
+pred = model.predict(x_test)
+print("Boston RMSE:", np.sqrt(mean_squared_error(y_test, pred)))
+plt.scatter(y_test, pred)
+plt.xlabel('Actual'); plt.ylabel('Predicted'); plt.title('Boston Housing'); plt.show()
+
+# Auto MPG Polynomial Regression
+data = fetch_openml("autoMpg", version=1, as_frame=True)
+df2 = data.frame.dropna(subset=["horsepower"])
+x2 = df2[["horsepower"]].astype(float)
+y2 = data.target.loc[df2.index].astype(float)
+x2_train, x2_test, y2_train, y2_test = train_test_split(x2, y2, test_size=0.2)
+poly = PolynomialFeatures(3)
+x2_train_poly = poly.fit_transform(x2_train)
+model2 = LinearRegression().fit(x2_train_poly, y2_train)
+pred2 = model2.predict(poly.transform(x2_test))
+print("Auto MPG R²:", r2_score(y2_test, pred2))
+plt.scatter(x2_test, y2_test, alpha=0.6)
+x_plot = np.linspace(x2_test.min(), x2_test.max(), 100)
+plt.plot(x_plot, model2.predict(poly.transform(x_plot)), c="red")
+plt.xlabel("Horsepower"); plt.ylabel("MPG"); plt.title("Auto MPG Poly Regression"); plt.show()
+
+# prog8 ------------------------------------------------------------------------------------
+
+import numpy as np
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.metrics import accuracy_score, classification_report
+import matplotlib.pyplot as plt
+
+data = load_breast_cancer()
+X, y = data.data, data.target
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+clf = DecisionTreeClassifier(random_state=42)
+clf.fit(X_train, y_train)
+
+y_pred = clf.predict(X_test)
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print(classification_report(y_test, y_pred, target_names=data.target_names))
+
+plt.figure(figsize=(18, 10))
+plot_tree(clf, filled=True, feature_names=data.feature_names, class_names=data.target_names, rounded=True, proportion=True)
+plt.show()
+
+sample = X_test[0].reshape(1, -1)
+pred = clf.predict(sample)
+print("Classified sample:", data.target_names[pred[0]])
+
+# prog9 ------------------------------------------------------------------------------------
+
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import fetch_olivetti_faces
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score
+
+faces = fetch_olivetti_faces(shuffle=True, random_state=42)
+X, y = faces.data, faces.target
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+nb_classifier = GaussianNB()
+nb_classifier.fit(X_train, y_train)
+
+y_pred = nb_classifier.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f" Accuracy: {accuracy * 100:.2f}%")
+
+fig, axes = plt.subplots(2, 5, figsize=(10, 5))
+for i, ax in enumerate(axes.ravel()):
+    ax.imshow(X_test[i].reshape(64, 64), cmap='gray')
+    ax.set_title(f'Pred: {y_pred[i]}')
+    ax.axis('off')
+plt.tight_layout()
+plt.show()
+
+# prog10 ------------------------------------------------------------------------------------
+
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_breast_cancer
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+
+data = load_breast_cancer()
+X = StandardScaler().fit_transform(data.data)
+
+cluster_labels = KMeans(n_clusters=2, random_state=42).fit_predict(X)
+x_pca = PCA(n_components=2).fit_transform(X)
+
+plt.scatter(x_pca[:, 0], x_pca[:, 1], c=cluster_labels, cmap='viridis', s=50)
+plt.title("K-Means Clustering on Breast Cancer Dataset")
+plt.xlabel("PCA Component 1")
+plt.ylabel("PCA Component 2")
+plt.colorbar(label='Cluster label')
+plt.show()
+
+
+
